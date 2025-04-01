@@ -10,3 +10,5 @@ Functionality added by myself:
 - functionality accessible in different ways: keyboard shortcuts, context menu,
 - import image using continuity camera,
 - export using share link.
+
+![screenshot_01-04-2025_14-04-51-709](https://github.com/user-attachments/assets/6c6aa868-f3ed-473e-b9e7-3056447ea85a)
