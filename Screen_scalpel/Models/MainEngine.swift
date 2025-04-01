@@ -13,25 +13,8 @@ import UniformTypeIdentifiers
 class MainEngine: ObservableObject {
     @Published var images = [NSImage]()
     @AppStorage(AppStorageKeys.defaultScreenshotsDirectoryURL) var defaultScreenshotsDirectoryURL: URL = URL.picturesDirectory
-    private var screenshotFileName: URL?
-    private var savedScreenshotFileName: URL?
-    private var processOutput: String? {
-        didSet {
-            print ("screenshot was done and this is output of the processs: \(processOutput)")
-            if let output = processOutput?.contains("cannot write file to intended destination"), output == true {
-                print ("Somehing went wrong - screencapture could not write file on disk")
-                print ("Error message: \(processOutput ?? "")")
-            }
-            prepareClipboardContent(for: screenshotFileName)
-        }
-    }
-    
     
     init() {
-        self.screenshotFileName = nil
-        self.savedScreenshotFileName = nil
-        self.processOutput = nil
-        
         KeyboardShortcuts.onKeyUp(for: .screenCapture) { [self] in
             self.takeScreenshot(of: .screen)
         }
@@ -60,15 +43,13 @@ class MainEngine: ObservableObject {
     func takeScreenshot(of type: ScreenShotTypes) {
         
         let toolURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        screenshotFileName = prepareImageFileName()
-        let taskArguments: [String] = type.processArguments + [screenshotFileName!.relativePath]
+        let taskArguments: [String] = type.processArguments + [prepareImageFileName()]
         
-// code of lunch function comes from apple developer forum: https://developer.apple.com/forums/thread/690310
+//  some code below taken from apple developer forum: https://developer.apple.com/forums/thread/690310
         
         try! launch(tool: toolURL, arguments: taskArguments) { (status, outputData) in
             let output = String(data: outputData, encoding: .utf8) ?? ""
             print("done, status: \(status), output: \(output)")
-            self.processOutput = output
         }
     }
     
@@ -200,7 +181,6 @@ class MainEngine: ObservableObject {
                     group.leave()
                 }
             }
-            
         } catch {
             // If either the `fcntl` or the `run()` call threw, we set the error
             // and manually call the termination handler.  Note that we’ve only
@@ -223,33 +203,22 @@ class MainEngine: ObservableObject {
 
     typealias CompletionHandler = (_ result: Result<Int32, Error>, _ output: Data) -> Void
     
-    func prepareImageFileName() -> URL {
+    func prepareImageFileName() -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         dateFormatter.dateFormat = "dd-MM-yyyy_HH-mm-ss-SSS"
         let fileName: String = "screenshot_" + dateFormatter.string(from: Date())
         let fileURL = defaultScreenshotsDirectoryURL.appendingPathComponent(fileName, conformingTo: .png)
-//        return fileURL.relativePath
-        screenshotFileName = fileURL
-        return fileURL
-    }
-    
-    func prepareClipboardContent(for fileURL: URL?) {
-        print ("Prepare ClipboardContent - file URL \(fileURL?.relativePath)")
-        if let fileURL = fileURL {
-            if FileManager.default.fileExists(atPath: fileURL.relativePath) {
-                print ("file \(fileURL.lastPathComponent) was CREATED.")
-            } else {
-                print ("Something went wrong - file was not found!")
-            }
-        } else {
-            print ("Something went wrong - no file URL!")
-        }
+        return fileURL.relativePath
     }
     
     private func getDefaultPictureURL() throws -> URL {
         let pictureFolderURL: URL = try FileManager.default.url(for: .picturesDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
         return pictureFolderURL
+    }
+    
+    func addImagetoImagesAndPastboard() {
+        
     }
     
     func openInFinder() {
