@@ -13,7 +13,7 @@ struct ScreenSniperApp: App {
     
     @StateObject var stateManager = NavigationStateManager()
     @AppStorage("menuBarExtraIsVisible") var menuBarExtraIsVisible: Bool = false
-    @StateObject var screenCaptureModel = MainEngine()
+    @StateObject var screenCaptureEngine = MainEngine()
     
     var body: some Scene {
         
@@ -21,10 +21,10 @@ struct ScreenSniperApp: App {
             ContentView()
         }
         .environmentObject(stateManager)
-        .environmentObject(screenCaptureModel)
+        .environmentObject(screenCaptureEngine)
         
         MenuBarExtra("Screen Scalpel", systemImage: "dot.scope", isInserted: $menuBarExtraIsVisible) {
-            MenuBarExtraView(screenCaptureModel: screenCaptureModel)
+            MenuBarExtraView(screenCaptureModel: screenCaptureEngine)
         }
         .environmentObject(stateManager)
         .menuBarExtraStyle(.window)
@@ -33,6 +33,6 @@ struct ScreenSniperApp: App {
             SettingsView()
         }
         .environmentObject(stateManager)
-        .environmentObject(screenCaptureModel)
+        .environmentObject(screenCaptureEngine)
     }
 }

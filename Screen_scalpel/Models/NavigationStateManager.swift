@@ -12,6 +12,6 @@ import UniformTypeIdentifiers
 @MainActor
 class NavigationStateManager: ObservableObject {
     
-    @Published var customError: CustomerError? = nil
+    @Published var customError: CustomError? = nil
     
 }

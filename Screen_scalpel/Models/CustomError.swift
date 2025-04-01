@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum CustomerError: Error, LocalizedError{
+enum CustomError: Error, LocalizedError{
     case noWritePermission
     
     var failureReason: String? {

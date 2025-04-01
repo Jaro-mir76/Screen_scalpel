@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @EnvironmentObject private var screenCaptureModel: MainEngine
+    @EnvironmentObject private var screenCaptureEngine: MainEngine
     
     var body: some View {
         VStack {
@@ -19,21 +19,21 @@ struct ContentView: View {
             
             HStack{
                 Button(action: {    //Capture seleceted part of the screen
-                    screenCaptureModel.takeScreenshot(of: .selection)
+                    screenCaptureEngine.takeScreenshot(of: .selection)
                 }, label: { Label("Capture selected screen part", systemImage: "crop")
                         .labelStyle(.iconOnly)
                 })
                 
                 
                 Button {    //Capture selected window
-                    screenCaptureModel.takeScreenshot(of: .window)
+                    screenCaptureEngine.takeScreenshot(of: .window)
                 } label: {
                     Label("Capture entire screen", systemImage: "macwindow")
                         .labelStyle(.iconOnly)
                 }
                 
                 Button {    //Capture entire screen
-                    screenCaptureModel.takeScreenshot(of: .screen)
+                    screenCaptureEngine.takeScreenshot(of: .screen)
                 } label: {
                     Label("Capture entire screen", systemImage: "inset.filled.rectangle")
                         .labelStyle(.iconOnly)
@@ -41,7 +41,7 @@ struct ContentView: View {
             }
             ScrollView{
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 200, maximum: 300))]) {
-                    ForEach(screenCaptureModel.images, id: \.self) {image in
+                    ForEach(screenCaptureEngine.images, id: \.self) {image in
                         Image(nsImage: image)
                             .resizable()
                             .scaledToFit()
