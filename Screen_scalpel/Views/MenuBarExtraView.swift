@@ -8,51 +8,29 @@
 import SwiftUI
 
 struct MenuBarExtraView: View {
-    
-    @ObservedObject var screenCaptureModel: MainEngine
+    @EnvironmentObject private var screenCaptureEngine: MainEngine
     
     var body: some View {
-        VStack(alignment: .center, spacing: 20) {
+        VStack(alignment: .center) {
             HStack{
-                Button(action: {    //Capture seleceted part of the screen
-                    screenCaptureModel.takeScreenshot(of: .selection)
-                }, label: { Label("Capture selected screen part", systemImage: "crop")
-                        .labelStyle(.iconOnly)
-                })
-                
-                Button {    //Capture selected window
-                    screenCaptureModel.takeScreenshot(of: .window)
-                } label: {
-                    Label("Capture entire screen", systemImage: "macwindow")
-                        .labelStyle(.iconOnly)
-                }
-                
-                Button {    //Capture entire screen
-                    screenCaptureModel.takeScreenshot(of: .screen)
-                } label: {
-                    Label("Capture entire screen", systemImage: "inset.filled.rectangle")
-                        .labelStyle(.iconOnly)
-                }
+                CaptureSelectionButton(fontSize: .title3, buttonSize: .small)
+                CaptureWindowButton(fontSize: .title3, buttonSize: .small)
+                CaptureScreenButton(fontSize: .title3, buttonSize: .small)
+                CaptureFromiPhoneButton(fontSize: .title3, buttonSize: .small)
             }
+            .frame(maxHeight: 30)
             ScrollView{
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 50, maximum: 100))]) {
-                    ForEach(screenCaptureModel.images, id: \.self) {image in
-                        Image(nsImage: image)
-                            .resizable()
-                            .scaledToFit()
-                            .onDrag {
-                                NSItemProvider(object: image)
-                            }
-                    }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 60, maximum: 100))]) {
+                    ScreenshotsListView()
                 }
             }
-//            .contentMargins(20)
-            .frame(maxWidth: 200, maxHeight: 150)
+            .frame(maxWidth: 370, maxHeight: 200)
         }
-        .padding(10)
+        .padding(5)
     }
 }
 
 #Preview {
-    MenuBarExtraView(screenCaptureModel: MainEngine())
+    MenuBarExtraView()
+        .environmentObject(MainEngine())
 }

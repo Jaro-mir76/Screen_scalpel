@@ -12,27 +12,65 @@ import UniformTypeIdentifiers
 struct ScreenSniperApp: App {
     
     @StateObject var stateManager = NavigationStateManager()
-    @AppStorage("menuBarExtraIsVisible") var menuBarExtraIsVisible: Bool = false
-    @StateObject var screenCaptureModel = MainEngine()
+    @StateObject var screenCaptureEngine = MainEngine()
+    @AppStorage("menuBarExtraIsVisible") var menuBarExtraIsVisible: Bool = true
+    @Environment(\.openWindow) var openWindow
     
     var body: some Scene {
         
         Window("Screen Scalpel", id: "mainWindow") {
             ContentView()
         }
+        .commands(content: {
+            #if os(macOS)
+            ImportFromDevicesCommands()
+            #endif
+        })
         .environmentObject(stateManager)
-        .environmentObject(screenCaptureModel)
+        .environmentObject(screenCaptureEngine)
         
-        MenuBarExtra("Screen Scalpel", systemImage: "dot.scope", isInserted: $menuBarExtraIsVisible) {
-            MenuBarExtraView(screenCaptureModel: screenCaptureModel)
+        WindowGroup(id: WindowsIdentifiers.importFromIPhone) {
+            ContinuityCameraView()
         }
+        .environmentObject(screenCaptureEngine)
+        .commands {
+            #if os(macOS)
+            ImportFromDevicesCommands()
+            #endif
+        }
+        
+        MenuBarExtra("Screen Scalpel", systemImage: "crop", isInserted: $menuBarExtraIsVisible) {
+            MenuBarExtraView()
+        }
+        .environmentObject(screenCaptureEngine)
         .environmentObject(stateManager)
         .menuBarExtraStyle(.window)
+        
+        UtilityWindow("Preview", id: WindowsIdentifiers.previewWindow) {
+            PreviewView()
+        }
+        .environmentObject(stateManager)
+        
+//        Window("Preview", id: WindowsIdentifiers.previewWindow) {
+//            PreviewView()
+//        }
+//        .commands {
+//            CommandMenu("View") {
+//                Button ("Show image preview") {
+//                    if stateManager.previewVisible {
+//                        
+//                    }
+//                    openWindow(id: WindowsIdentifiers.previewWindow)
+//                }
+////                .keyboardShortcut(.space, modifiers: [])
+//            }
+//        }
+//        .keyboardShortcut(.space, modifiers: [])
         
         Settings{
             SettingsView()
         }
         .environmentObject(stateManager)
-        .environmentObject(screenCaptureModel)
+        .environmentObject(screenCaptureEngine)
     }
 }

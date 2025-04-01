@@ -9,58 +9,51 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @EnvironmentObject private var screenCaptureModel: MainEngine
+    @EnvironmentObject private var screenCaptureEngine: MainEngine
+    @EnvironmentObject private var stateManager: NavigationStateManager
+    @FocusState private var focusedImageUrl: URL?
+    @Environment(\.openWindow) var openWindow
+    @Environment(\.dismissWindow) var dismissWindow
     
     var body: some View {
         VStack {
-//            Text("Screen Scalpel!")
-//                .padding(.top, 5)
-//                .frame(width: 100)
-            
-            HStack{
-                Button(action: {    //Capture seleceted part of the screen
-                    screenCaptureModel.takeScreenshot(of: .selection)
-                }, label: { Label("Capture selected screen part", systemImage: "crop")
-                        .labelStyle(.iconOnly)
-                })
-                
-                
-                Button {    //Capture selected window
-                    screenCaptureModel.takeScreenshot(of: .window)
-                } label: {
-                    Label("Capture entire screen", systemImage: "macwindow")
-                        .labelStyle(.iconOnly)
-                }
-                
-                Button {    //Capture entire screen
-                    screenCaptureModel.takeScreenshot(of: .screen)
-                } label: {
-                    Label("Capture entire screen", systemImage: "inset.filled.rectangle")
-                        .labelStyle(.iconOnly)
-                }
-            }
-            ScrollView{
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 200, maximum: 300))]) {
-                    ForEach(screenCaptureModel.images, id: \.self) {image in
-                        Image(nsImage: image)
-                            .resizable()
-                            .scaledToFit()
-                            .onDrag {
-                                NSItemProvider(object: image)
-                            } //preview: {
-//                                <#code#>
-//                            }
+            ZStack {
+                ScrollView{
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100, maximum: 200))]) {
+                        ScreenshotsListView()
+                    }
+                    .padding(5)
+                    .toolbar {
+                        ToolbarItem(placement: .principal) {
+                            HStack {
+                                CaptureSelectionButton(fontSize: .title, buttonSize: .large)
+                                CaptureWindowButton(fontSize: .title, buttonSize: .large)
+                                CaptureScreenButton(fontSize: .title, buttonSize: .large)
+                                CaptureFromiPhoneButton(fontSize: .title, buttonSize: .large)
+                            }
+                        }
+
+                        ToolbarItem(placement: .primaryAction) {
+                            HStack {
+                                OpenInFinderButton(fontSize: .title2, buttonSize: .regular)
+                                ShowPreviewButton(fontSize: .title2, buttonSize: .regular)
+                                ImportImagesButton(fontSize: .title2, buttonSize: .regular)
+                                ShareButton()
+                            }
+                        }
                     }
                 }
+                .padding(.top, 10)
             }
+            .padding(.top, 5)
+            .padding(.horizontal, 5)
         }
-        .padding()
-//        .frame(width: 150, height: 120)
     }
 }
 
 #Preview {
     ContentView()
         .environmentObject(MainEngine())
-        .frame(width: 150, height: 120)
+        .environmentObject(NavigationStateManager())
+        .frame(width: 800, height: 400)
 }

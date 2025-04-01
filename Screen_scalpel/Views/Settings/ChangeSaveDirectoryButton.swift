@@ -38,21 +38,46 @@ struct ChangeSaveDirectoryButton: View {
                 case .OK:
                     if let url = openPanel.url {
                         screenshotsDirectory = url
-                        checkWritePermision(screenshotsDirectory)
+                        if !checkWritePermision(screenshotsDirectory) {
+                            navigationState.customError = .noWritePermission
+                            showAlert = true
+                        }
                     }
                 case .cancel:
-                    checkWritePermision(screenshotsDirectory)
+                    if !checkWritePermision(screenshotsDirectory) {
+                        navigationState.customError = .noWritePermission
+                        showAlert = true
+                    }
                 case .abort: break
                 default: break
             }
         }
     }
     
-    func checkWritePermision(_ directoryUrl: URL) {
-        if !FileManager.default.isWritableFile(atPath: directoryUrl.path()) {
-            navigationState.customError = .noWritePermission
-            showAlert = true
+    func checkWritePermision(_ directoryUrl: URL) -> Bool {
+//         Not sure why but after latest OS update this isn't working properly any more, or I don't know how to use it
+//        if !FileManager.default.isWritableFile(atPath: directoryUrl.path()) {
+//            navigationState.customError = .noWritePermission
+//            showAlert = true
+//        }
+        let tmpFileUrl = prepareTmpFileName(inDirectory: directoryUrl)
+        let tmpData = Data()
+        do {
+            try tmpData.write(to: tmpFileUrl, options: .atomic)
+            try FileManager.default.removeItem(atPath: tmpFileUrl.relativePath)
+        } catch {
+            return false
         }
+        return true
+    }
+    
+    func prepareTmpFileName(inDirectory directoryUrl: URL) -> URL {
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.dateFormat = "dd-MM-yyyy_HH-mm-ss-SSS"
+        let fileName: String = "screen_scalpel_tmp_file_" + dateFormatter.string(from: Date())
+        let fileURL = directoryUrl.appendingPathComponent(fileName)
+        return fileURL
     }
 }
 

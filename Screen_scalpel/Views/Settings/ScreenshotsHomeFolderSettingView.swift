@@ -11,7 +11,7 @@ struct ScreenshotsHomeFolderSettingView: View {
     
     @AppStorage(AppStorageKeys.defaultScreenshotsDirectoryURL) var screenshotsDirectory: URL = URL.picturesDirectory
     @EnvironmentObject private var screenCaptureModel: MainEngine
-//    @EnvironmentObject var stateManager: NavigationStateManager
+    @EnvironmentObject private var stateManager: NavigationStateManager
     
     var body: some View {
         VStack(alignment: .trailing) {
@@ -21,8 +21,7 @@ struct ScreenshotsHomeFolderSettingView: View {
                 
             HStack {
                 Button("Show in Finder") {
-//                    screenCaptureModel.openInFinder()
-                    NSWorkspace.shared.open(URL(filePath: screenshotsDirectory.path(), directoryHint: .isDirectory))
+                    screenCaptureModel.openInFinder()
                 }
                 ChangeSaveDirectoryButton()
             }
@@ -33,7 +32,7 @@ struct ScreenshotsHomeFolderSettingView: View {
 #Preview {
     ScreenshotsHomeFolderSettingView()
         .environmentObject(MainEngine())
-//        .environmentObject(NavigationStateManager())
+        .environmentObject(NavigationStateManager())
         .padding()
         
 }

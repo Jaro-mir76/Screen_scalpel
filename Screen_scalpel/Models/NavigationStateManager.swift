@@ -12,6 +12,10 @@ import UniformTypeIdentifiers
 @MainActor
 class NavigationStateManager: ObservableObject {
     
-    @Published var customError: CustomerError? = nil
+    @Published var customError: CustomError? = nil
+    @Published var previewVisible: Bool = false
+    @Published var focusedImageUrl: URL?
+//    @AppStorage(AppStorageKeys.defaultScreenshotsDirectoryURL) var screenshotsDirectory: URL = URL.picturesDirectory
+//    @AppStorage(AppStorageKeys.menuBarExtraIsVisible) var menuBarExtraIsVisible: Bool = false
     
 }

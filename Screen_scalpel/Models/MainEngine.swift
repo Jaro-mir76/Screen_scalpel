@@ -8,10 +8,14 @@
 import SwiftUI
 import KeyboardShortcuts
 import UniformTypeIdentifiers
+import AppKit
+import QuickLookThumbnailing
 
 @MainActor
 class MainEngine: ObservableObject {
-    @Published var images = [NSImage]()
+    @Published var images: [URL: NSImage] = [:]
+    @Published var urls: [URL] = []
+    
     @AppStorage(AppStorageKeys.defaultScreenshotsDirectoryURL) var defaultScreenshotsDirectoryURL: URL = URL.picturesDirectory
     
     init() {
@@ -43,13 +47,15 @@ class MainEngine: ObservableObject {
     func takeScreenshot(of type: ScreenShotTypes) {
         
         let toolURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        let taskArguments: [String] = type.processArguments + [prepareImageFileName()]
+        let screenshotFileName: URL = prepareImageFileName()
+        let taskArguments: [String] = type.processArguments + [screenshotFileName.relativePath]
         
-//  some code below taken from apple developer forum: https://developer.apple.com/forums/thread/690310
+// code of lunch function comes from apple developer forum: https://developer.apple.com/forums/thread/690310
         
         try! launch(tool: toolURL, arguments: taskArguments) { (status, outputData) in
             let output = String(data: outputData, encoding: .utf8) ?? ""
             print("done, status: \(status), output: \(output)")
+            self.addToImagesAndPastboard(fileURL: screenshotFileName)
         }
     }
     
@@ -203,13 +209,50 @@ class MainEngine: ObservableObject {
 
     typealias CompletionHandler = (_ result: Result<Int32, Error>, _ output: Data) -> Void
     
-    func prepareImageFileName() -> String {
+    func prepareImageFileName() -> URL {
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         dateFormatter.dateFormat = "dd-MM-yyyy_HH-mm-ss-SSS"
         let fileName: String = "screenshot_" + dateFormatter.string(from: Date())
         let fileURL = defaultScreenshotsDirectoryURL.appendingPathComponent(fileName, conformingTo: .png)
-        return fileURL.relativePath
+        return fileURL
+    }
+    
+    func addImportedImage(_ image: NSImage) {
+// TODO error management
+        let fileName = prepareImageFileName()
+        let _ = saveImageOnDisk(image, fileName)
+        addToImagesAndPastboard(fileURL: fileName)
+        generateThumbnail(fromUrl: fileName)
+    }
+    
+    func saveImageOnDisk(_ nsImage: NSImage, _ inFile: URL) -> Bool {
+        guard let tiffRepresentation = nsImage.tiffRepresentation, let imageBitMap = NSBitmapImageRep(data: tiffRepresentation) else {return false}
+        guard let data = imageBitMap.representation(using: .png, properties: [NSBitmapImageRep.PropertyKey.compressionFactor: 1]) else {return false}
+        do {
+            try data.write(to: inFile, options: .atomic)
+        } catch {
+            return false
+        }
+        return true
+    }
+    
+    func generateThumbnail(fromUrl: URL) {
+        let size: CGSize = CGSize(width: 100, height: 100)
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        let request = QLThumbnailGenerator.Request(fileAt: fromUrl, size: size, scale: scale, representationTypes: .lowQualityThumbnail)
+        let generator = QLThumbnailGenerator.shared
+        generator.generateRepresentations(for: request) { (thumbnail, type, error) in
+            DispatchQueue.main.async {
+                if thumbnail == nil || error != nil {
+//TODO implement error management
+                    print ("Something went wrong \(error)")
+                    return
+                } else {
+                    self.images[fromUrl] = thumbnail!.nsImage
+                }
+            }
+        }
     }
     
     private func getDefaultPictureURL() throws -> URL {
@@ -217,17 +260,58 @@ class MainEngine: ObservableObject {
         return pictureFolderURL
     }
     
-    func addImagetoImagesAndPastboard() {
-        
+    func addToImagesAndPastboard(fileURL: URL) {
+        addToImages(fileURL: fileURL)
+        createClipboardFrom(fileURL)
+    }
+    
+    func addToImages(fileURL: URL) {
+        generateThumbnail(fromUrl: fileURL)
+        self.urls.append(fileURL)
+    }
+    
+    func createClipboardFrom(_ fromURL: URL) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.writeObjects([fromURL as NSURL])
     }
     
     func openInFinder() {
         NSWorkspace.shared.open(URL(filePath: defaultScreenshotsDirectoryURL.path(), directoryHint: .isDirectory))
     }
     
-    private func getImageFromPastboard() {
-        guard NSPasteboard.general.canReadItem(withDataConformingToTypes: NSImage.imageTypes) else { return }
-        guard let image = NSImage(pasteboard: NSPasteboard.general) else {return}
-        self.images.append(image)
+    func deleteScreenshotFile(_ fileUrl: URL) -> Bool {
+        do {
+            try FileManager.default.removeItem(atPath: fileUrl.relativePath)
+        } catch {
+            return false
+        }
+        return true
+    }
+    
+    func importScreenshotsFromFolder() {
+//        var fileUrls: [URL] = []
+        do {
+            let urls = try FileManager.default.contentsOfDirectory(at: defaultScreenshotsDirectoryURL, includingPropertiesForKeys: nil, options: FileManager.DirectoryEnumerationOptions(arrayLiteral: .skipsHiddenFiles, .skipsSubdirectoryDescendants, .skipsPackageDescendants))
+
+            for i in urls.indices {
+                if urls[i].pathExtension == "png" || urls[i].pathExtension == "jpeg" {
+//                    print ("\(i) - \(urls[i].lastPathComponent)")
+                    if !self.urls.contains(urls[i]) {
+                        addToImages(fileURL: urls[i])
+//                        print ("added url: \(urls[i]) to images")
+                    } else {
+//                        print ("skipping url: \(urls[i])")
+                    }
+                }
+            }
+        } catch {
+// TODO if needed implement error management
+            print ("someting went wrong during importing of folder content")
+        }
+    }
+    
+    func fileExists (_ url: URL?) -> Bool {
+        guard let url = url else {return false}
+        return FileManager.default.fileExists(atPath: url.relativePath)
     }
 }

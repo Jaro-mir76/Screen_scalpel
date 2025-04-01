@@ -10,11 +10,12 @@ import SwiftUI
 struct GeneralSettingsView: View {
     
     @AppStorage("menuBarExtraIsVisible") var menuBarExtraIsVisible: Bool = true
+    @EnvironmentObject private var stateManager: NavigationStateManager
     
     var body: some View {
         Form {
             VStack(alignment: .center) {
-                    Toggle("Show menu bar Extra", isOn: $menuBarExtraIsVisible)
+                Toggle("Show menu bar Extra", isOn: $menuBarExtraIsVisible)
                 Divider()
                     .padding(5)
                 ScreenshotsHomeFolderSettingView()

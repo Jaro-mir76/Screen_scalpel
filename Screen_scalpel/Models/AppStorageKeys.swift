@@ -9,4 +9,5 @@ import Foundation
 
 struct AppStorageKeys {
     static let defaultScreenshotsDirectoryURL = "defaultScreenshotsDirectoryURL"
+    static let menuBarExtraIsVisible = "menuBarExtraIsVisible"
 }
