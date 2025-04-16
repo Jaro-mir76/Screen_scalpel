@@ -19,7 +19,6 @@ struct ImportImagesButton: View {
             Label("Import screenshots from current folder", systemImage: "square.and.arrow.down")
                 .labelStyle(.iconOnly)
                 .font(fontSize)
-//                .frame(width: 20, height: 25)
                 .help(Text("Import screenshots from current folder"))
         }
         .controlSize(buttonSize!)

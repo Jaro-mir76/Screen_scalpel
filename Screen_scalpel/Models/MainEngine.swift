@@ -11,11 +11,8 @@ import UniformTypeIdentifiers
 import AppKit
 import QuickLookThumbnailing
 
-@MainActor
 class MainEngine: ObservableObject {
-    @Published var images: [URL: NSImage] = [:]
-    @Published var urls: [URL] = []
-    
+    @Published var screenshots: [Screenshot] = []
     @AppStorage(AppStorageKeys.defaultScreenshotsDirectoryURL) var defaultScreenshotsDirectoryURL: URL = URL.picturesDirectory
     
     init() {
@@ -223,7 +220,6 @@ class MainEngine: ObservableObject {
         let fileName = prepareImageFileName()
         let _ = saveImageOnDisk(image, fileName)
         addToImagesAndPastboard(fileURL: fileName)
-        generateThumbnail(fromUrl: fileName)
     }
     
     func saveImageOnDisk(_ nsImage: NSImage, _ inFile: URL) -> Bool {
@@ -237,20 +233,28 @@ class MainEngine: ObservableObject {
         return true
     }
     
-    func generateThumbnail(fromUrl: URL) {
+    func generateThumbnail(fromUrl: URL, completion: @escaping (NSImage) -> Void) {
         let size: CGSize = CGSize(width: 100, height: 100)
         let scale = NSScreen.main?.backingScaleFactor ?? 2
-        let request = QLThumbnailGenerator.Request(fileAt: fromUrl, size: size, scale: scale, representationTypes: .lowQualityThumbnail)
-        let generator = QLThumbnailGenerator.shared
-        generator.generateRepresentations(for: request) { (thumbnail, type, error) in
-            DispatchQueue.main.async {
+        
+        if fromUrl != nil {
+            let request = QLThumbnailGenerator.Request(fileAt: fromUrl, size: size, scale: scale, representationTypes: .lowQualityThumbnail)
+            let generator = QLThumbnailGenerator.shared
+            generator.generateRepresentations(for: request) { (thumbnail, type, error) in
                 if thumbnail == nil || error != nil {
 //TODO implement error management
-                    print ("Something went wrong \(error)")
                     return
                 } else {
-                    self.images[fromUrl] = thumbnail!.nsImage
+                        completion(thumbnail!.nsImage)
                 }
+            }
+        }
+    }
+    
+    func generateThumbnail(fromUrl: URL) async -> NSImage? {
+        await withCheckedContinuation { continuation in
+            generateThumbnail(fromUrl: fromUrl) { thumbnail in
+                continuation.resume(returning: thumbnail)
             }
         }
     }
@@ -259,15 +263,31 @@ class MainEngine: ObservableObject {
         let pictureFolderURL: URL = try FileManager.default.url(for: .picturesDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
         return pictureFolderURL
     }
-    
+
+    func addToImages(fileURL: URL)  {
+        Task { @MainActor in
+            var thumbnail: NSImage?
+            thumbnail = await generateThumbnail(fromUrl: fileURL)
+            
+            guard thumbnail != nil else {
+//TODO error management
+                return
+            }
+                
+            guard let resource = try? fileURL.resourceValues(forKeys: [.creationDateKey]) else {
+//TODO error management
+                return
+            }
+
+            let creationDate = resource.creationDate ?? Date()
+            let newScreenshot = Screenshot(url: fileURL, thumbnail: thumbnail!, creationDate: creationDate)
+            self.screenshots.append(newScreenshot)
+        }
+    }
+
     func addToImagesAndPastboard(fileURL: URL) {
         addToImages(fileURL: fileURL)
         createClipboardFrom(fileURL)
-    }
-    
-    func addToImages(fileURL: URL) {
-        generateThumbnail(fromUrl: fileURL)
-        self.urls.append(fileURL)
     }
     
     func createClipboardFrom(_ fromURL: URL) {
@@ -289,24 +309,18 @@ class MainEngine: ObservableObject {
     }
     
     func importScreenshotsFromFolder() {
-//        var fileUrls: [URL] = []
         do {
-            let urls = try FileManager.default.contentsOfDirectory(at: defaultScreenshotsDirectoryURL, includingPropertiesForKeys: nil, options: FileManager.DirectoryEnumerationOptions(arrayLiteral: .skipsHiddenFiles, .skipsSubdirectoryDescendants, .skipsPackageDescendants))
+            let urls = try FileManager.default.contentsOfDirectory(at: defaultScreenshotsDirectoryURL, includingPropertiesForKeys: [.creationDateKey], options: FileManager.DirectoryEnumerationOptions(arrayLiteral: .skipsHiddenFiles, .skipsSubdirectoryDescendants, .skipsPackageDescendants))
 
             for i in urls.indices {
                 if urls[i].pathExtension == "png" || urls[i].pathExtension == "jpeg" {
-//                    print ("\(i) - \(urls[i].lastPathComponent)")
-                    if !self.urls.contains(urls[i]) {
+                    if screenshots.firstIndex(where: {$0.url == urls[i]}) == nil {
                         addToImages(fileURL: urls[i])
-//                        print ("added url: \(urls[i]) to images")
-                    } else {
-//                        print ("skipping url: \(urls[i])")
                     }
                 }
             }
         } catch {
 // TODO if needed implement error management
-            print ("someting went wrong during importing of folder content")
         }
     }
     

@@ -14,57 +14,57 @@ struct ScreenshotsListView: View {
     @FocusState private var focusedImageUrl: URL?
     
     var body: some View {
-        ForEach(screenCaptureEngine.urls, id: \.self ) { url in
-            if screenCaptureEngine.images[url] != nil {
-                Image(nsImage: screenCaptureEngine.images[url]!)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 75)
-                    .focusable()
-                    .focused($focusedImageUrl, equals: url)
-                    .shadow(color: .gray, radius: 5)
-                    .padding(5)
-                    .onMoveCommand(perform: {direction in
-                        switch direction {
-                        case .up:
-                            return
-                        case .down:
-                            return
-                        case .left:
-                            moveFocusLeft(url: url)
-                            return
-                        case .right:
-                            moveFocusRight(url: url)
-                            return
-                        default:
-                            print ("some new direction/feature not covered yet in the app")
-                        }
-                    })
-                    .onDrag {
-                        NSItemProvider(contentsOf: url)!
+        ForEach(screenCaptureEngine.screenshots, id: \.url) {screenshot in
+            Image(nsImage: screenshot.thumbnail)
+                .resizable()
+//                    .scaleEffect(focusedImageUrl == screenshot.url ? 1.2 : 1)
+                .scaledToFit()
+                .frame(maxHeight: 75)
+                .focusable()
+                .focused($focusedImageUrl, equals: screenshot.url)
+                .shadow(color: .gray, radius: 5)
+                .padding(5)
+                .onMoveCommand(perform: {direction in
+                    switch direction {
+                    case .up:
+// TODO - but first have to find a way to control number of columns
+                        return
+                    case .down:
+// TODO - but first have to find a way to control number of columns
+                        return
+                    case .left:
+                        moveFocusLeft(url: screenshot.url)
+                        return
+                    case .right:
+                        moveFocusRight(url: screenshot.url)
+                        return
+                    default:
+                        print ("some new direction/feature not covered yet in the app")
                     }
-                    .onCopyCommand(perform: {
-                        [NSItemProvider(contentsOf: url)!]
-                    })
-                    .contextMenu(menuItems: {
-                        Button("Copy") {
-                            screenCaptureEngine.createClipboardFrom(url)
-                        }
-                        Button("Delete") {
-                            screenCaptureEngine.urls.remove(at: screenCaptureEngine.urls.firstIndex(of: url)!)
-                            screenCaptureEngine.images[url] = nil
-                            if !screenCaptureEngine.deleteScreenshotFile(url) {
+                })
+                .onDrag {
+                    NSItemProvider(contentsOf: screenshot.url)!
+                }
+                .onCopyCommand(perform: {
+                    [NSItemProvider(contentsOf: screenshot.url)!]
+                })
+                .contextMenu(menuItems: {
+                    Button("Copy") {
+                        screenCaptureEngine.createClipboardFrom(screenshot.url)
+                    }
+                    Button("Delete") {
+                        screenCaptureEngine.screenshots.remove(at: screenCaptureEngine.screenshots.firstIndex(of: screenshot)!)
+                        if !screenCaptureEngine.deleteScreenshotFile(screenshot.url) {
 // TODO implement error management
-                                print ("Something went wrong, couldn't delete the screenshot file")
-                            }
+                            print ("Something went wrong, couldn't delete the screenshot file")
                         }
-                    })
-            }
+                    }
+                })
         }
         .onDeleteCommand {
             if focusedImageUrl != nil, focusedImageUrl == stateManager.focusedImageUrl {
-                screenCaptureEngine.urls.remove(at: screenCaptureEngine.urls.firstIndex(of: focusedImageUrl!)!)
-                screenCaptureEngine.images[focusedImageUrl!] = nil
+                //                screenCaptureEngine.urls.remove(at: screenCaptureEngine.urls.firstIndex(of: focusedImageUrl!)!)
+                screenCaptureEngine.screenshots.remove(at: screenCaptureEngine.screenshots.firstIndex(where: {$0.url == focusedImageUrl!})!)
                 stateManager.focusedImageUrl = nil
                 if stateManager.previewVisible {
                     stateManager.previewVisible.toggle()
@@ -82,18 +82,18 @@ struct ScreenshotsListView: View {
     }
     
     func moveFocusLeft(url: URL) {
-        if let indexOfFocused = screenCaptureEngine.urls.firstIndex(where: {$0 == url}), indexOfFocused > 0 {
-            focusedImageUrl = screenCaptureEngine.urls[indexOfFocused - 1 ]
-        } else if let indexOfFocused = screenCaptureEngine.urls.firstIndex(where: {$0 == url}), indexOfFocused == 0 {
-            focusedImageUrl = screenCaptureEngine.urls.last
+        if let indexOfFocused = screenCaptureEngine.screenshots.firstIndex(where: {$0.url == url}), indexOfFocused > 0 {
+            focusedImageUrl = screenCaptureEngine.screenshots[indexOfFocused - 1].url
+        } else if let indexOfFocused = screenCaptureEngine.screenshots.firstIndex(where: {$0.url == url}), indexOfFocused == 0 {
+            focusedImageUrl = screenCaptureEngine.screenshots.last?.url
         }
     }
     
     func moveFocusRight(url: URL) {
-        if let indexOfFocused = screenCaptureEngine.urls.firstIndex(where: {$0 == url}), screenCaptureEngine.urls.count > indexOfFocused + 1 {
-            focusedImageUrl = screenCaptureEngine.urls[indexOfFocused + 1]
-        } else if let indexOfFocused = screenCaptureEngine.urls.firstIndex(where: {$0 == url}), screenCaptureEngine.urls.count == indexOfFocused + 1 {
-            focusedImageUrl = screenCaptureEngine.urls.first
+        if let indexOfFocused = screenCaptureEngine.screenshots.firstIndex(where: {$0.url == url}), screenCaptureEngine.screenshots.count > indexOfFocused + 1 {
+            focusedImageUrl = screenCaptureEngine.screenshots[indexOfFocused + 1].url
+        } else if let indexOfFocused = screenCaptureEngine.screenshots.firstIndex(where: {$0.url == url}), screenCaptureEngine.screenshots.count == indexOfFocused + 1 {
+            focusedImageUrl = screenCaptureEngine.screenshots.first?.url
         }
     }
 }

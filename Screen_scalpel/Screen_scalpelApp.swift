@@ -51,22 +51,6 @@ struct ScreenSniperApp: App {
         }
         .environmentObject(stateManager)
         
-//        Window("Preview", id: WindowsIdentifiers.previewWindow) {
-//            PreviewView()
-//        }
-//        .commands {
-//            CommandMenu("View") {
-//                Button ("Show image preview") {
-//                    if stateManager.previewVisible {
-//                        
-//                    }
-//                    openWindow(id: WindowsIdentifiers.previewWindow)
-//                }
-////                .keyboardShortcut(.space, modifiers: [])
-//            }
-//        }
-//        .keyboardShortcut(.space, modifiers: [])
-        
         Settings{
             SettingsView()
         }

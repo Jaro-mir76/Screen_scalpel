@@ -12,13 +12,19 @@ struct MenuBarExtraView: View {
     
     var body: some View {
         VStack(alignment: .center) {
-            HStack{
-                CaptureSelectionButton(fontSize: .title3, buttonSize: .small)
-                CaptureWindowButton(fontSize: .title3, buttonSize: .small)
-                CaptureScreenButton(fontSize: .title3, buttonSize: .small)
-                CaptureFromiPhoneButton(fontSize: .title3, buttonSize: .small)
+            ZStack {
+                HStack{
+                    CaptureSelectionButton(fontSize: .title3, buttonSize: .small)
+                    CaptureWindowButton(fontSize: .title3, buttonSize: .small)
+                    CaptureScreenButton(fontSize: .title3, buttonSize: .small)
+                    CaptureFromiPhoneButton(fontSize: .title3, buttonSize: .small)
+                }
+                .frame(maxHeight: 30)
+                HStack{
+                    Spacer()
+                    ShowPreviewButton(fontSize: .title3, buttonSize: .small)
+                }
             }
-            .frame(maxHeight: 30)
             ScrollView{
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 60, maximum: 100))]) {
                     ScreenshotsListView()
